@@ -6,6 +6,8 @@ const NONE = -1
 var inputs = readline().split(' ');
 const width = parseInt(inputs[0]);
 const height = parseInt(inputs[1]);
+let turnCount = 0;
+let isLeftSideOfMap = false;
 
 // game loop
 while (true) {
@@ -17,6 +19,8 @@ while (true) {
     const oppTiles = []
     const myTiles = []
     const neutralTiles = []
+
+    turnCount++;
 
     var inputs = readline().split(' ');
     const myMatter = parseInt(inputs[0]);
@@ -40,7 +44,8 @@ while (true) {
                 recycler,
                 canBuild,
                 canSpawn,
-                inRangeOfRecycler,                
+                inRangeOfRecycler,
+                hasOpp: false,             
             }
 
             tiles.push(tile)
@@ -49,6 +54,9 @@ while (true) {
                 myTiles.push(tile)
                 if (tile.units > 0) {
                     myUnits.push(tile)
+                    if(turnCount <= 1) {
+                        isLeftSideOfMap = tile.x < Math.floor(width/2)
+                    }
                 } else if (tile.recycler) {
                     myRecyclers.push(tile)
                 }
@@ -66,10 +74,9 @@ while (true) {
     }
 
     const actions = []
-    const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);
-    const tileToSpawnOn = [];
+    const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);    
     const tileToBuildOn = [];
-    const tileSpawned = [];
+    let tileToSpawnOn = [];
     for (const tile of myTiles) {        
         if (tile.canSpawn && shouldSpawn(tile, tiles, myMatter)) {            
             tileToSpawnOn.push(tile);
@@ -80,24 +87,28 @@ while (true) {
             }
         }
     }
-
-
+     
+    if(isLeftSideOfMap) {
+        tileToSpawnOn.sort((tileA, tileB) =>  tileB.x - tileA.x);
+    } else {
+        tileToSpawnOn.sort((tileA, tileB) =>  tileA.x - tileB.x);
+    }
+    // const filteredTiles = tileToSpawnOn.filter(tile => tile.hasOpp === true);
+    // tileToSpawnOn = filteredTiles.length > 0 ? filteredTiles : tileToSpawnOn;
     let amount = 0;
-    if(numberOfRobotToBuildThisTurn % tileToSpawnOn.length > 1) {
+    if(tileToSpawnOn.length > 0 && Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length) >0) {
+        actions.push(`MESSAGE ${Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length)} ${numberOfRobotToBuildThisTurn} ${tileToSpawnOn.length}`);
         amount = Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length);
     } else {
-        amount = 1;
-    }     
-    for (const tile of tileToSpawnOn) {
-        if(amount) {
-            tileSpawned.push(tile);
-            actions.push(`SPAWN ${amount} ${tile.x} ${tile.y}`);
+        amount = 1;   
+        for (const tile of tileToBuildOn) {
+            actions.push(`BUILD ${tile.x} ${tile.y}`)
         }
     }
-    for (const tile of tileToBuildOn) {
-        // if(tileSpawned.find(t => t.x == tile.x && t.y == tile.y)) {
-            actions.push(`BUILD ${tile.x} ${tile.y}`)
-        // }
+    for (const tile of tileToSpawnOn) {
+        if(amount) {
+            actions.push(`SPAWN ${amount} ${tile.x} ${tile.y}`);
+        }
     }
     
     for (const tile of myUnits) {
@@ -113,7 +124,7 @@ while (true) {
         }    
         //TODO: pick a destination
         if (target) {
-            const amount = tile.units;//Math.floor(tile.units/2) + 1 //TODO: pick amount of units to move
+            const amount = tile.units; // Math.floor(tile.units/2) + 1 //TODO: pick amount of units to move
             actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
         }
     }
@@ -134,6 +145,27 @@ function getTargetTile(currentTile, tiles, withNeutral) {
     const bottomIndex = getTileIndex(tiles, currentTile) + width;    
     const bottomTile = getTile(bottomIndex, tiles);;
 
+    if(currentTile.x > Math.floor(width/2)) {
+        if(hasOpponent(leftTile)) {
+            return leftTile;
+        }
+        if(hasOpponent(rightTile)) {
+            return rightTile;
+        }
+    } else {        
+        if(hasOpponent(rightTile)) {
+            return rightTile;
+        }
+        if(hasOpponent(leftTile)) {
+            return leftTile;
+        }
+    }
+    if(hasOpponent(bottomTile)) {
+        return bottomTile;
+    }
+    if(hasOpponent(upperTile)) {
+        return upperTile;
+    }
     if(withNeutral === true) {
         if(currentTile.x > Math.floor(width/2)) {
             if(hasNeutral(leftTile)) {
@@ -158,38 +190,19 @@ function getTargetTile(currentTile, tiles, withNeutral) {
             return upperTile;
         }
     }
-
-    if(currentTile.x > Math.floor(width/2)) {
-        if(hasOpponent(leftTile)) {
-            return leftTile;
-        }
-        if(hasOpponent(rightTile)) {
-            return rightTile;
-        }
-    } else {        
-        if(hasOpponent(rightTile)) {
-            return rightTile;
-        }
-        if(hasOpponent(leftTile)) {
-            return leftTile;
-        }
-    }
-
-    if(hasOpponent(bottomTile)) {
-        return bottomTile;
-    }
-    if(hasOpponent(upperTile)) {
-        return upperTile;
-    }
     return null;
 }
 
 function hasNeutral(tile) {
-    return tile != null && tile.owner < 0 && tile.scrapAmount > 0
+    return tile != null && tile.owner === NONE && tile.scrapAmount > 0
 }
 
 function hasOpponent(tile) {
-    return tile != null && tile.owner == 0 && tile.scrapAmount > 0;
+    const result = tile != null && tile.owner == OPP && tile.scrapAmount > 0 && tile.inRangeOfRecycler == 0;
+    if(result) {
+        tile.hasOpp = true;
+    }
+    return result;
 }
 
 function getTile(index, tiles) {
@@ -208,7 +221,7 @@ function getHorizotaleTile(index, tiles, currentTile) {
 
 function haveBuildOpportunity(currentTile, tiles, myMatter) {
     const target = getTargetTile(currentTile, tiles, false);
-    return target != null && target.inRangeOfRecycler == 0 && target.scrapAmount > 2 || myMatter == 10;
+    return target != null && target.inRangeOfRecycler == 0 && target.scrapAmount > 2;// && myMatter < 100;
 }
 
 function shouldSpawn(currentTile, tiles, myMatter) {
