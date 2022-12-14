@@ -25,6 +25,7 @@ while (true) {
     var inputs = readline().split(' ');
     const myMatter = parseInt(inputs[0]);
     const oppMatter = parseInt(inputs[1]);
+    let index = 0;
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             var inputs = readline().split(' ');
@@ -45,7 +46,8 @@ while (true) {
                 canBuild,
                 canSpawn,
                 inRangeOfRecycler,
-                hasOpp: false,             
+                hasOpp: false,
+                index    
             }
 
             tiles.push(tile)
@@ -53,10 +55,11 @@ while (true) {
             if (tile.owner == ME) {
                 myTiles.push(tile)
                 if (tile.units > 0) {
-                    myUnits.push(tile)
+                    myUnits.push(tile);
                     if(turnCount <= 1) {
-                        isLeftSideOfMap = tile.x < Math.floor(width/2)
+                        isLeftSideOfMap = tile.x < Math.floor(width/2)                        
                     }
+                    index++;
                 } else if (tile.recycler) {
                     myRecyclers.push(tile)
                 }
@@ -93,11 +96,10 @@ while (true) {
     } else {
         tileToSpawnOn.sort((tileA, tileB) =>  tileA.x - tileB.x);
     }
-    // const filteredTiles = tileToSpawnOn.filter(tile => tile.hasOpp === true);
-    // tileToSpawnOn = filteredTiles.length > 0 ? filteredTiles : tileToSpawnOn;
+    const filteredTiles = tileToSpawnOn.filter(tile => tile.hasOpp === true);
+    tileToSpawnOn = filteredTiles.length > 0 ? filteredTiles : tileToSpawnOn;
     let amount = 0;
-    if(tileToSpawnOn.length > 0 && Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length) >0) {
-        actions.push(`MESSAGE ${Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length)} ${numberOfRobotToBuildThisTurn} ${tileToSpawnOn.length}`);
+    if(tileToSpawnOn.length > 0 && Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length) >0) {        
         amount = Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length);
     } else {
         amount = 1;   
@@ -112,7 +114,7 @@ while (true) {
     }
     
     for (const tile of myUnits) {
-        let target = getTargetTile(tile, tiles, true);
+        let target = getTargetTile(tile, tiles, true, myUnits);
         if(!target) {
             let index = 0;
             oppTiles.forEach(oppTile => {
@@ -132,18 +134,19 @@ while (true) {
     console.log(actions.length > 0 ? actions.join(';') : 'WAIT');
 }
 
-function getTargetTile(currentTile, tiles, withNeutral) {
-    const upperIndex = getTileIndex(tiles, currentTile) - width;    
+function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
+    const currentTileIndex = getTileIndex(tiles, currentTile);
+    const upperIndex = currentTileIndex - width;    
     const upperTile = getTile(upperIndex, tiles);
 
-    const rightIndex = getTileIndex(tiles, currentTile) + 1;
+    const rightIndex = currentTileIndex + 1;
     const rightTile = getHorizotaleTile(rightIndex, tiles, currentTile);
 
-    const leftIndex = getTileIndex(tiles, currentTile) - 1;
+    const leftIndex = currentTileIndex - 1;
     const leftTile = getHorizotaleTile(leftIndex, tiles, currentTile);
 
-    const bottomIndex = getTileIndex(tiles, currentTile) + width;    
-    const bottomTile = getTile(bottomIndex, tiles);;
+    const bottomIndex = currentTileIndex + width;    
+    const bottomTile = getTile(bottomIndex, tiles);
 
     if(currentTile.x > Math.floor(width/2)) {
         if(hasOpponent(leftTile)) {
@@ -167,6 +170,17 @@ function getTargetTile(currentTile, tiles, withNeutral) {
         return upperTile;
     }
     if(withNeutral === true) {
+        if(turnCount <= 10 && myUnits) {            
+            if(currentTile.index === myUnits.length - 1) {
+                if(hasNeutral(bottomTile)) {
+                    return bottomTile;
+                }
+            } else if(turnCount <= 10 && currentTile.index === 0) {            
+                if(hasNeutral(upperTile)) {
+                    return upperTile;
+                }
+            }
+        }
         if(currentTile.x > Math.floor(width/2)) {
             if(hasNeutral(leftTile)) {
                 return leftTile;
