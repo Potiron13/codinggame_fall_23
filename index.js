@@ -77,20 +77,21 @@ while (true) {
     }
 
     const actions = []
-    const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);    
+    actions.push(`MESSAGE COUCOU LAALA`);
+    const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);
     const tileToBuildOn = [];
     let tileToSpawnOn = [];
-    for (const tile of myTiles) {        
-        if (tile.canSpawn && shouldSpawn(tile, tiles, myMatter)) {            
+    for (const tile of myTiles) {
+        if (tile.canSpawn && shouldSpawn(tile, tiles, myMatter)) {
             tileToSpawnOn.push(tile);
         }
         if (tile.canBuild) {
             if (haveBuildOpportunity(tile, tiles, myMatter)) {
-                tileToBuildOn.push(tile);                
+                tileToBuildOn.push(tile);
             }
         }
     }
-     
+
     if(isLeftSideOfMap) {
         tileToSpawnOn.sort((tileA, tileB) =>  tileB.x - tileA.x);
     } else {
@@ -99,10 +100,10 @@ while (true) {
     const filteredTiles = tileToSpawnOn.filter(tile => tile.hasOpp === true);
     tileToSpawnOn = filteredTiles.length > 0 ? filteredTiles : tileToSpawnOn;
     let amount = 0;
-    if(tileToSpawnOn.length > 0 && Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length) >0) {        
+    if(tileToSpawnOn.length > 0 && Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length) >0) {
         amount = Math.floor(numberOfRobotToBuildThisTurn/tileToSpawnOn.length);
     } else {
-        amount = 1;   
+        amount = 1;
         for (const tile of tileToBuildOn) {
             actions.push(`BUILD ${tile.x} ${tile.y}`)
         }
@@ -112,7 +113,7 @@ while (true) {
             actions.push(`SPAWN ${amount} ${tile.x} ${tile.y}`);
         }
     }
-    
+
     for (const tile of myUnits) {
         let target = getTargetTile(tile, tiles, true, myUnits);
         if(!target) {
@@ -123,7 +124,7 @@ while (true) {
                 }
             });
             target = oppTiles[index];
-        }    
+        }
         //TODO: pick a destination
         if (target) {
             const amount = tile.units; // Math.floor(tile.units/2) + 1 //TODO: pick amount of units to move
@@ -135,8 +136,9 @@ while (true) {
 }
 
 function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
+    const opponentList = [];
     const currentTileIndex = getTileIndex(tiles, currentTile);
-    const upperIndex = currentTileIndex - width;    
+    const upperIndex = currentTileIndex - width;
     const upperTile = getTile(upperIndex, tiles);
 
     const rightIndex = currentTileIndex + 1;
@@ -145,9 +147,30 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
     const leftIndex = currentTileIndex - 1;
     const leftTile = getHorizotaleTile(leftIndex, tiles, currentTile);
 
-    const bottomIndex = currentTileIndex + width;    
+    const bottomIndex = currentTileIndex + width;
     const bottomTile = getTile(bottomIndex, tiles);
 
+    if(upperTile) {
+        opponentList.push(upperTile);
+    }
+    if(rightTile) {
+        opponentList.push(rightTile);
+    }
+    if(leftTile) {
+        opponentList.push(leftTile);
+    }
+    if(bottomTile) {
+        opponentList.push(bottomTile);
+    }
+
+    if (currentTile.units > 1 && opponentList.length > 1) {
+        opponentList.sort((tileA, tileB) =>  tileB.units - tileA.units);
+        for (let i = 0; i < opponentList.length; i++) {
+            if(hasOpponent(opponentList[i]) && currentTile.units > opponentList[i].units) {
+                return opponentList[i];
+            }
+        }
+    }
     if(currentTile.x > Math.floor(width/2)) {
         if(hasOpponent(leftTile)) {
             return leftTile;
@@ -155,7 +178,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
         if(hasOpponent(rightTile)) {
             return rightTile;
         }
-    } else {        
+    } else {
         if(hasOpponent(rightTile)) {
             return rightTile;
         }
@@ -170,7 +193,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
         return upperTile;
     }
     if(withNeutral === true) {
-        if(turnCount <= 10 && myUnits) {            
+        if(turnCount <= Math.floor(height/4) && myUnits) {
             if(currentTile.index === myUnits.length - 1) {
                 if(hasNeutral(bottomTile)) {
                     return bottomTile;
