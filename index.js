@@ -8,6 +8,7 @@ const width = parseInt(inputs[0]);
 const height = parseInt(inputs[1]);
 let turnCount = 0;
 let isLeftSideOfMap = false;
+let isTopSideOfMap = false;
 
 // game loop
 while (true) {
@@ -58,7 +59,8 @@ while (true) {
                 if (tile.units > 0) {
                     myUnits.push(tile);
                     if(turnCount <= 1) {
-                        isLeftSideOfMap = tile.x < Math.floor(width/2)
+                        isLeftSideOfMap = tile.x < Math.floor(width/2);
+                        isTopSideOfMap = tile.y < Math.floor(height/2);
                     }
                     index++;
                 } else if (tile.recycler) {
@@ -87,16 +89,27 @@ while (true) {
             tileToSpawnOn.push(tile);
         }
         if (tile.canBuild) {
+            if(turnCount === 1) {
+                actions.push(`BUILD ${tile.x} ${tile.y}`)
+            }
             if (haveBuildOpportunity(tile, tiles, myMatter)) {
                 tileToBuildOn.push(tile);
             }
         }
     }
 
-    if(isLeftSideOfMap) {
-        tileToSpawnOn.sort((tileA, tileB) =>  tileB.x - tileA.x);
+    if(turnCount % 2 == 0) {
+        if(isLeftSideOfMap) {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileB.x - tileA.x);
+        } else {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileA.x - tileB.x);
+        }
     } else {
-        tileToSpawnOn.sort((tileA, tileB) =>  tileA.x - tileB.x);
+        if(isTopSideOfMap) {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileB.y - tileA.y);
+        } else {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileA.y - tileB.y);
+        }
     }
     const filteredTiles = tileToSpawnOn.filter(tile => tile.hasOpp === true);
     tileToSpawnOn = filteredTiles.length <= 2 && filteredTiles.length > 0 ? filteredTiles : tileToSpawnOn;
@@ -136,8 +149,6 @@ while (true) {
                 const amount = Math.floor(tile.units/2) + 1 //tile.units; //TODO: pick amount of units to move
                 unitCount -= amount;
                 actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
-            } else {
-                unitCount = 0;
             }
         }
     }
@@ -203,14 +214,14 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
         return upperTile;
     }
     if(withNeutral === true) {
-        if(upperTile) {
-            neutralList.push(upperTile);
-        }
         if(rightTile) {
             neutralList.push(rightTile);
         }
         if(leftTile) {
             neutralList.push(leftTile);
+        }
+        if(upperTile) {
+            neutralList.push(upperTile);
         }
         if(bottomTile) {
             neutralList.push(bottomTile);
@@ -221,7 +232,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
                 if(hasNeutral(bottomTile)) {
                     return bottomTile;
                 }
-            } else if(turnCount <= 10 && currentTile.index === 0) {
+            } else if(currentTile.index === 0) {
                 if(hasNeutral(upperTile)) {
                     return upperTile;
                 }
