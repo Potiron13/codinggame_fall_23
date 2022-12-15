@@ -8,6 +8,7 @@ const width = parseInt(inputs[0]);
 const height = parseInt(inputs[1]);
 let turnCount = 0;
 let isLeftSideOfMap = false;
+let isTopSideOfMap = false;
 
 // game loop
 while (true) {
@@ -58,7 +59,8 @@ while (true) {
                 if (tile.units > 0) {
                     myUnits.push(tile);
                     if(turnCount <= 1) {
-                        isLeftSideOfMap = tile.x < Math.floor(width/2)
+                        isLeftSideOfMap = tile.x < Math.floor(width/2);
+                        isTopSideOfMap = tile.y < Math.floor(height/2);
                     }
                     index++;
                 } else if (tile.recycler) {
@@ -79,25 +81,37 @@ while (true) {
 
     const actions = []
     actions.push(`MESSAGE COUCOU LAALA`);
-    const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);
+    const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);    
     const tileToBuildOn = [];
     let tileToSpawnOn = [];
-    for (const tile of myTiles) {
-        if (tile.canSpawn && shouldSpawn(tile, tiles, myMatter)) {
+    for (const tile of myTiles) {        
+        if (tile.canSpawn && shouldSpawn(tile, tiles, myMatter)) {            
             tileToSpawnOn.push(tile);
         }
         if (tile.canBuild) {
+            if(turnCount === 1) {
+                actions.push(`BUILD ${tile.x} ${tile.y}`)
+            }
             if (haveBuildOpportunity(tile, tiles, myMatter)) {
-                tileToBuildOn.push(tile);
+                tileToBuildOn.push(tile);                
             }
         }
     }
 
-    if(isLeftSideOfMap) {
-        tileToSpawnOn.sort((tileA, tileB) =>  tileB.x - tileA.x);
+    if(turnCount % 2 == 0) {
+        if(isLeftSideOfMap) {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileB.x - tileA.x);
+        } else {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileA.x - tileB.x);
+        }
     } else {
-        tileToSpawnOn.sort((tileA, tileB) =>  tileA.x - tileB.x);
+        if(isTopSideOfMap) {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileB.y - tileA.y);
+        } else {
+            tileToSpawnOn.sort((tileA, tileB) =>  tileA.y - tileB.y);
+        }
     }
+
     const filteredTiles = tileToSpawnOn.filter(tile => tile.hasOpp === true);
     tileToSpawnOn = filteredTiles.length <= 2 && filteredTiles.length > 0 ? filteredTiles : tileToSpawnOn;
     let amount = 0;
@@ -111,10 +125,11 @@ while (true) {
             actions.push(`SPAWN ${amount} ${tile.x} ${tile.y}`);
         }
     }
-    for (const tile of tileToBuildOn) {
+    for (const tile of tileToBuildOn) {        
         actions.push(`BUILD ${tile.x} ${tile.y}`)
     }
-
+    
+    const alreadyTargeted = [];
     for (const tile of myUnits) {
         let target = getTargetTile(tile, tiles, true, myUnits);
         if(!target) {
@@ -128,16 +143,42 @@ while (true) {
         }
         let unitCount = tile.units;
         while(unitCount > 0) {
-            actions.push(`MESSAGE ${unitCount}`)
-            if(unitCount != tile.units && tile.neighborTiles.length > 0) {
-                target = tile.neighborTiles.find(n => n.x != target.x && n.y != target.y);
+            if(unitCount != tile.units && tile.neighborTiles.length > 0) {                
+                if(alreadyTargeted.length > 0 && tile.neighborTiles.length > 0) {
+                    let targetFound = false;
+                    let targetIndex = 0;
+                    while(!targetFound) {
+                        if(alreadyTargeted.some(t => t.x === target.x && t.y === target.y)) {
+                            target = tile.neighborTiles[targetIndex];
+                            targetIndex++;
+                        } else {
+                            targetFound = true;
+                        }
+                    }
+                } 
+                //target = tile.neighborTiles[0]; // tile.neighborTiles.find(n => n.x != target.x && n.y != target.y);
             }
             if (target) {
                 const amount = Math.floor(tile.units/2) + 1 //tile.units; //TODO: pick amount of units to move
-                unitCount -= amount;
+                unitCount -= amount;   
+                if(alreadyTargeted.length > 0 && tile.neighborTiles.length > 0) {
+                    let targetFound = false;
+                    let targetIndex = 0;
+                    while(!targetFound) {
+                        if(alreadyTargeted.some(t => t.x === target.x && t.y === target.y)) {
+                            target = tile.neighborTiles[targetIndex];
+                            targetIndex++;
+                        } else {
+                            targetFound = true;
+                        }
+                    }
+                }                              
                 actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
+                alreadyTargeted.push(target);
+            } else {
+                unitCount = 0;
             }
-        }
+        }        
     }
 
     console.log(actions.length > 0 ? actions.join(';') : 'WAIT');
@@ -147,7 +188,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
     const opponentList = [];
     const neutralList = [];
     const currentTileIndex = getTileIndex(tiles, currentTile);
-    const upperIndex = currentTileIndex - width;
+    const upperIndex = currentTileIndex - width;    
     const upperTile = getTile(upperIndex, tiles);
 
     const rightIndex = currentTileIndex + 1;
@@ -156,7 +197,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
     const leftIndex = currentTileIndex - 1;
     const leftTile = getHorizotaleTile(leftIndex, tiles, currentTile);
 
-    const bottomIndex = currentTileIndex + width;
+    const bottomIndex = currentTileIndex + width;    
     const bottomTile = getTile(bottomIndex, tiles);
 
     if(upperTile) {
@@ -170,7 +211,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
     }
     if(bottomTile) {
         opponentList.push(bottomTile);
-    }
+    }    
     if (currentTile.units > 1 && opponentList.length > 1) {
         opponentList.sort((tileA, tileB) =>  tileB.units - tileA.units);
         for (let i = 0; i < opponentList.length; i++) {
@@ -186,7 +227,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
         if(hasOpponent(rightTile)) {
             return rightTile;
         }
-    } else {
+    } else {        
         if(hasOpponent(rightTile)) {
             return rightTile;
         }
@@ -201,25 +242,25 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
         return upperTile;
     }
     if(withNeutral === true) {
-        if(upperTile) {
-            neutralList.push(upperTile);
-        }
         if(rightTile) {
             neutralList.push(rightTile);
         }
         if(leftTile) {
             neutralList.push(leftTile);
         }
+        if(upperTile) {
+            neutralList.push(upperTile);
+        }
         if(bottomTile) {
             neutralList.push(bottomTile);
         }
         currentTile.neighborTiles.push.apply(neutralList);
-        if(turnCount <= Math.floor(height/2) && myUnits) {
+        if(turnCount <= Math.floor(height/2) && myUnits) {            
             if(currentTile.index === myUnits.length - 1) {
                 if(hasNeutral(bottomTile)) {
                     return bottomTile;
                 }
-            } else if(turnCount <= 10 && currentTile.index === 0) {
+            } else if(currentTile.index === 0) {            
                 if(hasNeutral(upperTile)) {
                     return upperTile;
                 }
@@ -232,7 +273,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
             if(hasNeutral(rightTile)) {
                 return rightTile;
             }
-        } else {
+        } else {        
             if(hasNeutral(rightTile)) {
                 return rightTile;
             }
@@ -240,7 +281,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
                 return leftTile;
             }
         }
-
+    
         if(hasNeutral(bottomTile)) {
             return bottomTile;
         }
@@ -278,8 +319,8 @@ function getHorizotaleTile(index, tiles, currentTile) {
 }
 
 function haveBuildOpportunity(currentTile, tiles, myMatter) {
-    const target = getTargetTile(currentTile, tiles, false);
-    return target != null; // && target.inRangeOfRecycler == 0 && target.scrapAmount > 2;// && myMatter < 100;
+    const target = getTargetTile(currentTile, tiles, false);    
+    return target != null; // && currentTile.neighborTiles.filter(n => n.units.length > 0 && n.owner === OPP) && target.inRangeOfRecycler == 0 && target.scrapAmount > 2;// && myMatter < 100;
 }
 
 function shouldSpawn(currentTile, tiles, myMatter) {
