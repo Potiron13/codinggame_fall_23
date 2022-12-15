@@ -1,16 +1,0 @@
-
-Wjavascript:S2189"6Correct this loop's end condition to not be invariant.(˜ïˆÿÿÿÿÿ
-[javascript:S4030"?Either use this collection's contents or remove the collection.(‚¯Ñ›
-`javascript:S4030"?Either use this collection's contents or remove the collection.(ô¼‚Ôùÿÿÿÿ
-[javascript:S4030"?Either use this collection's contents or remove the collection.(òåõô
-[javascript:S4030"?Either use this collection's contents or remove the collection.(åÔ˜´
-8javascript:S2814"'inputs' is already defined.(¢á‘„
-Vjavascript:S1481":Remove the declaration of the unused 'oppMatter' variable.(†¡€Á
-Sjavascript:S1854"7Remove this useless assignment to variable "oppMatter".(†¡€Á
-8javascript:S2814"'inputs' is already defined.(¢á‘„
-Rjavascript:S1117y"/'index' is already declared in the upper scope.(÷‰‰8È•Ñ0
-Tjavascript:S1117ˆ"0'amount' is already declared in the upper scope.(ÄàÕí8È•Ñ0
-Bjavascript:S125ˆ"Remove this commented out code.(ÄàÕí8‘È•Ñ0
-Xjavascript:S1135ˆ"4Complete the task associated to this "TODO" comment.(ÄàÕí8‘È•Ñ0
-}javascript:S3776’"TRefactor this function to reduce its Cognitive Complexity from 68 to the 15 allowed.(É£´‘úÿÿÿÿ8’È•Ñ0
-ujavascript:S4138°"LExpected a `for-of` loop instead of a `for` loop with this simple iteration.(ä²ì©ûÿÿÿÿ8“È•Ñ0

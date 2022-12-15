@@ -79,8 +79,7 @@ while (true) {
         }
     }
 
-    const actions = []
-    actions.push(`MESSAGE COUCOU LAALA`);
+    const actions = [];
     const numberOfRobotToBuildThisTurn = Math.floor(myMatter/10);    
     const tileToBuildOn = [];
     let tileToSpawnOn = [];
@@ -148,7 +147,7 @@ while (true) {
                     let targetFound = false;
                     let targetIndex = 0;
                     while(!targetFound) {
-                        if(alreadyTargeted.some(t => t.x === target.x && t.y === target.y)) {
+                        if(alreadyTargeted.some(t => t.x === target.x && t.y === target.y) || (height > 8 && target.inRangeOfRecycler === 1)) {
                             target = tile.neighborTiles[targetIndex];
                             targetIndex++;
                         } else {
