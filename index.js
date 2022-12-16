@@ -36,7 +36,7 @@ while (true) {
             const recycler = inputs[3] == '1';
             const canBuild = inputs[4] == '1';
             const canSpawn = inputs[5] == '1';
-            const inRangeOfRecycler = inputs[6] == '1';                        
+            const inRangeOfRecycler = inputs[6] == '1';
             const tile = {
                 x,
                 y,
@@ -149,6 +149,8 @@ while (true) {
                 const amount = Math.floor(tile.units/2) + 1 //tile.units; //TODO: pick amount of units to move
                 unitCount -= amount;
                 actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
+            } else {
+                unitCount = 0;
             }
         }
     }
@@ -214,14 +216,14 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
         return upperTile;
     }
     if(withNeutral === true) {
+        if(upperTile) {
+            neutralList.push(upperTile);
+        }
         if(rightTile) {
             neutralList.push(rightTile);
         }
         if(leftTile) {
             neutralList.push(leftTile);
-        }
-        if(upperTile) {
-            neutralList.push(upperTile);
         }
         if(bottomTile) {
             neutralList.push(bottomTile);
