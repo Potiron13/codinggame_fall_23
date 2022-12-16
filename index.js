@@ -139,20 +139,23 @@ while (true) {
             });
             target = oppTiles[index];
         }
-        let unitCount = tile.units;
-        while(unitCount > 0) {
-            actions.push(`MESSAGE ${unitCount}`)
-            if(unitCount != tile.units && tile.neighborTiles.length > 0) {
-                target = tile.neighborTiles.find(n => n.x != target.x && n.y != target.y);
-            }
-            if (target) {
-                const amount = Math.floor(tile.units/2) + 1 //tile.units; //TODO: pick amount of units to move
-                unitCount -= amount;
-                actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
-            } else {
-                unitCount = 0;
-            }
-        }
+
+        actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
+
+        // let unitCount = tile.units;
+        // while(unitCount > 0) {
+        //     actions.push(`MESSAGE ${unitCount}`)
+        //     if(unitCount != tile.units && tile.neighborTiles.length > 0) {
+        //         target = tile.neighborTiles.find(n => n.x != target.x && n.y != target.y);
+        //     }
+        //     if (target) {
+        //         const amount = Math.floor(tile.units/2) + 1 //tile.units; //TODO: pick amount of units to move
+        //         unitCount -= amount;
+        //         actions.push(`MOVE ${amount} ${tile.x} ${tile.y} ${target.x} ${target.y}`)
+        //     } else {
+        //         unitCount = 0;
+        //     }
+        // }
     }
 
     console.log(actions.length > 0 ? actions.join(';') : 'WAIT');
@@ -229,7 +232,7 @@ function getTargetTile(currentTile, tiles, withNeutral, myUnits) {
             neutralList.push(bottomTile);
         }
         currentTile.neighborTiles.push.apply(neutralList);
-        if(turnCount <= Math.floor(height/2) && myUnits) {
+        if(turnCount <= Math.floor(height) && myUnits) {
             if(currentTile.index === myUnits.length - 1) {
                 if(hasNeutral(bottomTile)) {
                     return bottomTile;
